@@ -1,0 +1,39 @@
+# Dependencies and package-manager files
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Next.js build output
+/.next/
+/out/
+/build/
+
+# Local secrets and environment-specific configuration
+.env*
+!.env.example
+
+# Vercel project metadata
+/.vercel
+
+# Supabase local development artifacts
+/supabase/.temp/
+/supabase/.branches/
+/supabase/.env
+
+# Logs and coverage
+*.log
+/coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

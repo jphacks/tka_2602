@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #1f2937;
+  --paper: #fffdf6;
+  --accent: #bf5b2b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: Arial, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+}

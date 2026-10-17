@@ -1,36 +1,34 @@
-# サンプル（プロダクト名）
+# レキしるべ
 
-[![IMAGE ALT TEXT HERE](https://jphacks.com/wp-content/uploads/2026/07/IMG_5316.png)](https://www.youtube.com/watch?v=piaNsc6ilBI)
+気になる歴史の「なぜ？」から、根拠を確かめながら学びを深める歴史探究アプリです。AIが短い説明、次に調べられる問い、関連する知識を提示し、ユーザーは発見を「歴史探偵ノート」に保存します。
 
-## 製品概要
-### 背景(製品開発のきっかけ、課題等）
-### 製品説明（具体的な製品の説明）
-### 特長
-#### 1. 特長1
-#### 2. 特長2
-#### 3. 特長3
+## 技術構成
 
-### 解決出来ること
-### 今後の展望
-### 注力したこと（こだわり等）
-* 
-* 
+- フロントエンド／バックエンド: Next.js, TypeScript, Tailwind CSS, Route Handlers
+- AI: Gemini API（構造化出力）
+- 認証・データベース: Supabase
+- 知識マップ: React Flow (`@xyflow/react`)
+- 動画: 確認済み動画のYouTube埋め込み。自由検索が必要になった時点でYouTube Data APIを追加します。
+- 公開: Vercel
 
-## 開発技術
-### 活用した技術
-#### API・データ
-* 
-* 
+## はじめかた
 
-#### フレームワーク・ライブラリ・モジュール
-* 
-* 
+```bash
+npm install
+Copy-Item .env.example .env.local
+npm run dev
+```
 
-#### デバイス
-* 
-* 
+`.env.local` にGeminiとSupabaseの値を設定してください。実際の値はGitに追加しません。
 
-### 独自技術
-#### ハッカソンで開発した独自機能・技術
-* 独自で開発したものの内容をこちらに記載してください
-* 特に力を入れた部分をファイルリンク、またはcommit_idを記載してください。
+Supabaseを使う前に、[`supabase/schema.sql`](supabase/schema.sql) をSupabase SQL Editorで実行してください。`detective_notes` テーブルと、本人のノートだけを読み書きできるRLSポリシーが作成されます。
+
+## 主要な構成
+
+```text
+app/                 # 画面とサーバーAPI
+components/          # 質問フォームと知識マップ
+lib/                 # Gemini、Supabase、動画の連携処理
+data/history.json    # 出典情報を含む基礎歴史データ
+supabase/schema.sql  # DBスキーマとアクセス制御
+```
