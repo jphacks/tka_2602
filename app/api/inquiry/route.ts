@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { answerInquiry } from "@/lib/gemini";
-import { findCuratedVideos } from "@/lib/youtube";
+import { findStarterSources } from "@/lib/sources";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -11,8 +11,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const inquiry = await answerInquiry(question);
-    return NextResponse.json({ ...inquiry, videos: findCuratedVideos(question) });
+    const sources = findStarterSources(question);
+    const inquiry = await answerInquiry(question, sources);
+    return NextResponse.json({ ...inquiry, sources });
   } catch (error) {
     console.error("Inquiry generation failed", error);
     return NextResponse.json(

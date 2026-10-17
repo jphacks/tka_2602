@@ -10,16 +10,44 @@
   ],
   "sources": [
     {
+      "id": "ndl-digital",
       "title": "国立国会図書館デジタルコレクション",
-      "url": "https://dl.ndl.go.jp/"
-    }
-  ],
-  "videos": [
+      "provider": "国立国会図書館",
+      "url": "https://dl.ndl.go.jp/",
+      "kind": "一次・公的資料",
+      "description": "歴史資料・古典籍・地図などを検索できるデジタルアーカイブです。",
+      "whyThisMatters": "一次資料や当時に近い記録を探す入口として使えます。",
+      "tags": ["日本史", "江戸", "戦国", "明治", "本能寺", "人物", "地図"]
+    },
     {
-      "title": "確認済み動画をここへ登録",
-      "youtubeId": "",
-      "description": "動画IDを登録すると、質問に応じて表示されます。",
-      "keywords": ["江戸", "幕府"]
+      "id": "japan-search",
+      "title": "ジャパンサーチ",
+      "provider": "ジャパンサーチ",
+      "url": "https://jpsearch.go.jp/",
+      "kind": "一次・公的資料",
+      "description": "博物館・図書館・文書館などのデジタル資料を横断検索できます。",
+      "whyThisMatters": "一つの機関だけでは見えない、画像や文化資料の比較に向いています。",
+      "tags": ["日本史", "文化", "江戸", "平安", "鎌倉", "戦国", "美術"]
+    },
+    {
+      "id": "nhk-school",
+      "title": "NHK for School",
+      "provider": "NHK",
+      "url": "https://www.nhk.or.jp/school/",
+      "kind": "動画",
+      "description": "歴史の背景や人物を短い教育動画から確認できます。",
+      "whyThisMatters": "年表や地図と組み合わせると、時代の全体像をつかみやすくなります。",
+      "tags": ["日本史", "世界史", "江戸", "戦国", "鎌倉", "平安", "明治", "動画"]
+    },
+    {
+      "id": "archives",
+      "title": "国立公文書館デジタルアーカイブ",
+      "provider": "国立公文書館",
+      "url": "https://www.digital.archives.go.jp/",
+      "kind": "一次・公的資料",
+      "description": "国の重要文書や絵図を閲覧できるアーカイブです。",
+      "whyThisMatters": "後世の解説だけでなく、当時の文書や図像にも触れられます。",
+      "tags": ["日本史", "江戸", "明治", "政治", "地図", "記録"]
     }
   ]
 }
