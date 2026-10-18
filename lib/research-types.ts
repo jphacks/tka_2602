@@ -10,7 +10,16 @@ export type CuriosityHook = {
   scenes: CuriosityScene[];
 };
 
-export type CuriosityScene = { id: string; title: string; summary: string; facts: string[] };
+export type CuriosityScene = {
+  id: string;
+  title: string;
+  angle: string;
+  timeframe: string;
+  place: string;
+  teaser: string;
+  detail: string;
+  facts: string[];
+};
 export type EvidenceCard = { claim: string; relevance: string; sourceTitle: string; sourceUrl: string };
 export type ResearchCard = { id: string; question: string; evidence: EvidenceCard[]; unknowns: string[]; nextQuestions: string[] };
 
