@@ -9,7 +9,7 @@ const inquirySchema = {
     curiosityHook: {
       type: "object",
       additionalProperties: false,
-      properties: { scenes: { type: "array", items: { type: "object", additionalProperties: false, properties: { id: { type: "string" }, title: { type: "string" }, summary: { type: "string" }, facts: { type: "array", items: { type: "string" } } }, required: ["id", "title", "summary", "facts"] } } },
+      properties: { scenes: { type: "array", items: { type: "object", additionalProperties: false, properties: { id: { type: "string" }, title: { type: "string" }, teaser: { type: "string" }, detail: { type: "string" }, facts: { type: "array", items: { type: "string" } } }, required: ["id", "title", "teaser", "detail", "facts"] } } },
       required: ["scenes"],
     },
   },
@@ -52,7 +52,15 @@ export async function createInquiryPlan(assignment: string, sources: ResearchSou
   const sourceSummary = sources.map(({ title, provider, description }) => ({ title, provider, description }));
   const plan = await structuredResponse<Omit<InquiryPlan, "sources">>(`あなたは小学高学年の歴史探究を支える案内役です。
 
-児童が「歴史を調べなさい」という課題を義務として終わらせず、自分の「なんで？」を見つけられるようにしてください。最初に答えや人物の本心を教えてはいけません。scenesには、問いではなく、児童が気になれる歴史上の場面を2〜3個入れてください。各場面には短い事実を最大3個入れます。
+児童が「歴史を調べなさい」という課題を義務として終わらせず、自分の「なんで？」を見つけられるようにしてください。最初に答えや人物の本心を教えてはいけません。scenesには、問いではなく、児童が気になれる歴史上の場面を2〜3個入れてください。
+
+各場面は次の役割を必ず守ってください。
+- title: 見出しだけで「え、どういうこと？」と思える、対比・制約・変化を含む短い表現。疑問文にはしない。
+- teaser: 選ぶ前に読む、2文・60〜100字程度のミニ場面。誰が何をしたかと、意外さ・対立・変化のどれかを一つ入れる。答えや理由は明かさない。
+- detail: 選んだ後に読む、3〜4文・160〜240字程度の背景説明。小学校高学年が、自分で疑問を作れるだけの状況を示す。人物の本心や唯一の原因は断定しない。
+- facts: detailを支える確認可能な事実を3〜4個。1項目は一文で、推測は書かない。
+
+単なる用語の説明や行動の列挙ではなく、「手に入れたが自由ではない」「同じ出来事で立場によって見え方が変わる」のような引っかかりを具体的な場面で示してください。
 
 backgroundは探究のための補助であり、児童の考察を代筆してはいけません。資料の本文を読んだふりをしてはいけません。
 
@@ -63,7 +71,7 @@ backgroundは探究のための補助であり、児童の考察を代筆して�
 
   return {
     ...plan,
-    curiosityHook: { scenes: plan.curiosityHook.scenes.slice(0, 3).map((scene) => ({ ...scene, facts: scene.facts.slice(0, 3) })) },
+    curiosityHook: { scenes: plan.curiosityHook.scenes.slice(0, 3).map((scene) => ({ ...scene, facts: scene.facts.slice(0, 4) })) },
     sources,
   };
 }

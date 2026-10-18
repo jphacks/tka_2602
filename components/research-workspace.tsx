@@ -22,11 +22,24 @@ type ResearchNote = {
 type LegacyResearch = Omit<ResearchNote, "id" | "createdAt" | "updatedAt"> & { version: 1 };
 type ResearchContent = Omit<ResearchNote, "id" | "createdAt" | "updatedAt">;
 
+function normalizeStoredPlan(plan: InquiryPlan): InquiryPlan {
+  return {
+    ...plan,
+    curiosityHook: {
+      ...plan.curiosityHook,
+      scenes: plan.curiosityHook.scenes.map((scene) => {
+        const olderScene = scene as CuriosityScene & { summary?: string };
+        return { ...scene, teaser: scene.teaser ?? olderScene.summary ?? "", detail: scene.detail ?? olderScene.summary ?? "" };
+      }),
+    },
+  };
+}
+
 function parseNotes(value: string): ResearchNote[] {
   try {
     const notes = JSON.parse(value) as unknown;
     if (!Array.isArray(notes)) return [];
-    return notes.filter((note): note is ResearchNote => Boolean(note && typeof note === "object" && "id" in note && "assignment" in note && "plan" in note && "cards" in note));
+    return notes.filter((note): note is ResearchNote => Boolean(note && typeof note === "object" && "id" in note && "assignment" in note && "plan" in note && "cards" in note)).map((note) => ({ ...note, plan: normalizeStoredPlan(note.plan) }));
   } catch {
     return [];
   }
@@ -76,7 +89,7 @@ export function ResearchWorkspace() {
     const legacy = parseLegacyNote(window.localStorage.getItem(legacyStorageKey) ?? "");
     if (!legacy) return;
     const now = new Date().toISOString();
-    const migrated: ResearchNote = { ...legacy, id: crypto.randomUUID(), createdAt: now, updatedAt: now };
+    const migrated: ResearchNote = { ...legacy, plan: normalizeStoredPlan(legacy.plan), id: crypto.randomUUID(), createdAt: now, updatedAt: now };
     window.localStorage.setItem(notesStorageKey, JSON.stringify([migrated]));
     window.localStorage.removeItem(legacyStorageKey);
     setNotes([migrated]);
@@ -213,5 +226,28 @@ export function ResearchWorkspace() {
     return <main className="inquiry-app"><header className="app-header"><p className="brand">レキしるべ</p><p>歴史の「なんで？」を、自分の言葉でたどろう。</p></header>{saveMessage && <p className="message saved-message">{saveMessage}</p>}<section className="start-card"><span className="step-label">新しい探究</span><h1>探究の入口を<br />見つけよう</h1><p>先生から出されたテーマを入れると、AIが歴史の中で気になりそうな場面を示します。</p><form onSubmit={start}><label htmlFor="assignment">今日調べる歴史のテーマ・課題</label><textarea id="assignment" value={assignment} onChange={(event) => setAssignment(event.target.value)} required /><div className="example-row">{examples.map((example) => <button key={example} type="button" onClick={() => setAssignment(example)}>{example}</button>)}</div><button className="primary-button" disabled={loading}>{loading ? "考えています…" : "気になる場面を探す"}</button></form></section><section className="notebook-list-card"><span className="step-label">探究ノート一覧</span><h2>これまでの探究を開く</h2>{notes.length === 0 ? <p>まだ保存した探究ノートはありません。</p> : <div className="notebook-list">{notes.map((note) => <article key={note.id} className="notebook-item"><div><h3>{note.plan.title}</h3><p>{note.assignment}</p><small>最終保存：{displayDate(note.updatedAt)} ・ 疑問：{note.cards.length}件</small></div><div className="notebook-actions"><button className="outline-button" onClick={() => openNote(note)}>開く</button><button className="delete-button" onClick={() => deleteNote(note.id)}>削除</button></div></article>)}</div>}</section>{error && <p className="message error-message">{error}</p>}</main>;
   }
 
-  return <main className="inquiry-app"><header className="app-header"><div><p className="brand">レキしるべ</p><p>歴史の「なんで？」を、自分の言葉でたどろう。</p></div><div className="header-actions"><button className="quiet-button" onClick={saveResearch}>ブラウザに保存</button><button className="quiet-button" onClick={clearWorkspace}>探究ノート一覧</button><button className="quiet-button" onClick={clearWorkspace}>新しいテーマ</button></div></header>{saveMessage && <p className="message saved-message">{saveMessage}</p>}<section className="theme-card"><span className="step-label">今日のテーマ</span><h1>{plan.title}</h1><p>{plan.background}</p></section><section className="curiosity-card"><div><span className="step-label">STEP 2</span><h2>どの場面が気になる？</h2><p>問いを選ぶのではなく、まず事実を見てみよう。</p></div><div className="question-choices">{plan.curiosityHook.scenes.map((item) => <button key={item.id} className={scene?.id === item.id ? "selected" : ""} onClick={() => setScene(item)}>{item.title}</button>)}</div>{scene && <div className="scene-facts"><h3>{scene.title}</h3><p>{scene.summary}</p><ul>{scene.facts.map((fact, index) => <li key={`${scene.id}-${index}`}>{fact}</li>)}</ul></div>}</section>{scene && <><section className="explore-card"><span className="step-label">STEP 3</span><h2>ここから、自分の「なんで？」を見つけよう</h2><p>「どこが不思議？」「誰の立場が気になる？」「なぜそうなった？」と考えてみよう。</p>{cards.length === 0 && questionForm}</section><section className="cards">{cards.map((card, cardIndex) => <article className="research-card" key={card.id}><span className="step-label">疑問 {cardIndex + 1}</span><h2>{card.question}</h2><h3>資料から分かったこと</h3>{card.evidence.map((evidence, evidenceIndex) => <div className="evidence-card" key={`${card.id}-evidence-${evidenceIndex}`}><p>{evidence.claim}</p><small>{evidence.relevance}</small><a href={evidence.sourceUrl} target="_blank" rel="noreferrer">{evidence.sourceTitle} を開く ↗</a></div>)}<h3>まだ決められないこと</h3><ul>{card.unknowns.map((unknown, unknownIndex) => <li key={`${card.id}-unknown-${unknownIndex}`}>{unknown}</li>)}</ul>{cardIndex === cards.length - 1 && <div className="next-questions"><h3>次に気になること</h3>{card.nextQuestions.map((nextQuestion, nextIndex) => <button key={`${card.id}-next-${nextIndex}`} onClick={() => setQuestion(nextQuestion)}>{nextQuestion}</button>)}</div>}</article>)}</section>{cards.length > 0 && <section className="explore-card question-composer"><span className="step-label">次の疑問</span><h2>続けて、気になることを調べよう</h2>{questionForm}</section>}{cards.length > 0 && <section className="reflection-card"><span className="step-label">最後に自分の言葉で</span><h2>考えの変化を書こう</h2><textarea value={reflection} onChange={(event) => setReflection(event.target.value)} placeholder="最初は〜と思ったが、資料を読んで〜と考えた。" /></section>}</>}{error && <p className="message error-message">{error}</p>}</main>;
+  return (
+    <main className="inquiry-app">
+      <header className="app-header">
+        <div><p className="brand">レキしるべ</p><p>歴史の「なんで？」を、自分の言葉でたどろう。</p></div>
+        <div className="header-actions"><button className="quiet-button" onClick={saveResearch}>ブラウザに保存</button><button className="quiet-button" onClick={clearWorkspace}>探究ノート一覧</button><button className="quiet-button" onClick={clearWorkspace}>新しいテーマ</button></div>
+      </header>
+      {saveMessage && <p className="message saved-message">{saveMessage}</p>}
+      <section className="theme-card"><span className="step-label">今日のテーマ</span><h1>{plan.title}</h1><p>{plan.background}</p></section>
+      <section className="curiosity-card">
+        <div><span className="step-label">STEP 2</span><h2>どの場面が気になる？</h2><p>問いを選ぶのではなく、まず短い場面を読んでみよう。</p></div>
+        <div className="question-choices">
+          {plan.curiosityHook.scenes.map((item) => <button key={item.id} className={scene?.id === item.id ? "selected" : ""} onClick={() => setScene(item)}><span className="scene-choice-title">{item.title}</span><span className="scene-teaser">{item.teaser}</span></button>)}
+        </div>
+        {scene && <div className="scene-facts"><span className="step-label">この場面を詳しく見る</span><h3>{scene.title}</h3><p className="scene-detail">{scene.detail}</p><h4>この場面で確かめられること</h4><ul>{scene.facts.map((fact, index) => <li key={`${scene.id}-${index}`}>{fact}</li>)}</ul></div>}
+      </section>
+      {scene && <>
+        <section className="explore-card"><span className="step-label">STEP 3</span><h2>ここから、自分の「なんで？」を見つけよう</h2><p>「どこが不思議？」「誰の立場が気になる？」「なぜそうなった？」と考えてみよう。</p>{cards.length === 0 && questionForm}</section>
+        <section className="cards">{cards.map((card, cardIndex) => <article className="research-card" key={card.id}><span className="step-label">疑問 {cardIndex + 1}</span><h2>{card.question}</h2><h3>資料から分かったこと</h3>{card.evidence.map((evidence, evidenceIndex) => <div className="evidence-card" key={`${card.id}-evidence-${evidenceIndex}`}><p>{evidence.claim}</p><small>{evidence.relevance}</small><a href={evidence.sourceUrl} target="_blank" rel="noreferrer">{evidence.sourceTitle} を開く ↗</a></div>)}<h3>まだ決められないこと</h3><ul>{card.unknowns.map((unknown, unknownIndex) => <li key={`${card.id}-unknown-${unknownIndex}`}>{unknown}</li>)}</ul>{cardIndex === cards.length - 1 && <div className="next-questions"><h3>次に気になること</h3>{card.nextQuestions.map((nextQuestion, nextIndex) => <button key={`${card.id}-next-${nextIndex}`} onClick={() => setQuestion(nextQuestion)}>{nextQuestion}</button>)}</div>}</article>)}</section>
+        {cards.length > 0 && <section className="explore-card question-composer"><span className="step-label">次の疑問</span><h2>続けて、気になることを調べよう</h2>{questionForm}</section>}
+        {cards.length > 0 && <section className="reflection-card"><span className="step-label">最後に自分の言葉で</span><h2>考えの変化を書こう</h2><textarea value={reflection} onChange={(event) => setReflection(event.target.value)} placeholder="最初は〜と思ったが、資料を読んで〜と考えた。" /></section>}
+      </>}
+      {error && <p className="message error-message">{error}</p>}
+    </main>
+  );
 }
