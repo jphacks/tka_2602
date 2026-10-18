@@ -1,5 +1,5 @@
-import { HomeWorkspace } from "@/components/home-workspace";
+import { InquiryWorkspace } from "@/components/inquiry-workspace";
 
 export default function HomePage() {
-  return <HomeWorkspace />;
+  return <InquiryWorkspace />;
 }
