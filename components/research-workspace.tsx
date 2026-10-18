@@ -20,6 +20,7 @@ type ResearchNote = {
 };
 
 type LegacyResearch = Omit<ResearchNote, "id" | "createdAt" | "updatedAt"> & { version: 1 };
+type ResearchContent = Omit<ResearchNote, "id" | "createdAt" | "updatedAt">;
 
 function parseNotes(value: string): ResearchNote[] {
   try {
@@ -45,6 +46,10 @@ function displayDate(iso: string) {
   return new Intl.DateTimeFormat("ja-JP", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso));
 }
 
+function contentSnapshot(content: ResearchContent) {
+  return JSON.stringify({ assignment: content.assignment, plan: content.plan, sceneId: content.sceneId, question: content.question, cards: content.cards, reflection: content.reflection });
+}
+
 export function ResearchWorkspace() {
   const [assignment, setAssignment] = useState("");
   const [plan, setPlan] = useState<InquiryPlan | null>(null);
@@ -57,6 +62,9 @@ export function ResearchWorkspace() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
+  const currentSnapshot = plan ? contentSnapshot({ assignment, plan, sceneId: scene?.id ?? null, question, cards, reflection }) : null;
+  const hasUnsavedChanges = Boolean(plan && currentSnapshot !== savedSnapshot);
 
   useEffect(() => {
     const savedNotes = parseNotes(window.localStorage.getItem(notesStorageKey) ?? "");
@@ -75,6 +83,16 @@ export function ResearchWorkspace() {
     setSaveMessage("以前に保存した探究ノートを一覧へ移しました。");
   }, []);
 
+  useEffect(() => {
+    function warnBeforeUnload(event: BeforeUnloadEvent) {
+      if (!hasUnsavedChanges) return;
+      event.preventDefault();
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   function writeNotes(nextNotes: ResearchNote[]) {
     const sorted = [...nextNotes].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     window.localStorage.setItem(notesStorageKey, JSON.stringify(sorted));
@@ -82,6 +100,7 @@ export function ResearchWorkspace() {
   }
 
   function clearWorkspace() {
+    if (hasUnsavedChanges && !window.confirm("保存していない変更があります。保存せずに探究ノート一覧へ移動しますか？")) return;
     setAssignment("");
     setPlan(null);
     setScene(null);
@@ -90,6 +109,7 @@ export function ResearchWorkspace() {
     setReflection("");
     setNoteId(null);
     setError("");
+    setSavedSnapshot(null);
   }
 
   function openNote(note: ResearchNote) {
@@ -100,6 +120,7 @@ export function ResearchWorkspace() {
     setCards(note.cards);
     setReflection(note.reflection);
     setNoteId(note.id);
+    setSavedSnapshot(contentSnapshot(note));
     setError("");
     setSaveMessage(`「${note.plan.title}」を開きました。`);
   }
@@ -128,6 +149,7 @@ export function ResearchWorkspace() {
     };
     writeNotes([saved, ...notes.filter((item) => item.id !== saved.id)]);
     setNoteId(saved.id);
+    setSavedSnapshot(contentSnapshot(saved));
     setSaveMessage(current ? "この探究ノートを更新しました。" : "新しい探究ノートとして保存しました。ノート一覧からいつでも開けます。");
   }
 
@@ -161,6 +183,7 @@ export function ResearchWorkspace() {
       setQuestion("");
       setReflection("");
       setNoteId(null);
+      setSavedSnapshot(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "エラーが起きました。");
     } finally {
