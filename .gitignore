@@ -1,5 +1,7 @@
 # Dependencies and package-manager files
 /node_modules
+/.codex-pnpm-store/
+/output/previews/
 /.pnp
 .pnp.*
 .yarn/*
