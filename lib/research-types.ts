@@ -13,6 +13,9 @@ export type CuriosityHook = {
 export type CuriosityScene = {
   id: string;
   title: string;
+  angle: string;
+  timeframe: string;
+  place: string;
   teaser: string;
   detail: string;
   facts: string[];

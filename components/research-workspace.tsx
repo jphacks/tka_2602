@@ -29,7 +29,14 @@ function normalizeStoredPlan(plan: InquiryPlan): InquiryPlan {
       ...plan.curiosityHook,
       scenes: plan.curiosityHook.scenes.map((scene) => {
         const olderScene = scene as CuriosityScene & { summary?: string };
-        return { ...scene, teaser: scene.teaser ?? olderScene.summary ?? "", detail: scene.detail ?? olderScene.summary ?? "" };
+        return {
+          ...scene,
+          angle: scene.angle ?? "歴史の場面",
+          timeframe: scene.timeframe ?? "このころ",
+          place: scene.place ?? "関係した地域",
+          teaser: scene.teaser ?? olderScene.summary ?? "",
+          detail: scene.detail ?? olderScene.summary ?? "",
+        };
       }),
     },
   };
@@ -237,16 +244,14 @@ export function ResearchWorkspace() {
       <section className="curiosity-card">
         <div><span className="step-label">STEP 2</span><h2>どの場面が気になる？</h2><p>問いを選ぶのではなく、まず短い場面を読んでみよう。</p></div>
         <div className="question-choices">
-          {plan.curiosityHook.scenes.map((item) => <button key={item.id} className={scene?.id === item.id ? "selected" : ""} onClick={() => setScene(item)}><span className="scene-choice-title">{item.title}</span><span className="scene-teaser">{item.teaser}</span></button>)}
+          {plan.curiosityHook.scenes.map((item) => <button key={item.id} className={scene?.id === item.id ? "selected" : ""} onClick={() => setScene(item)}><span className="scene-choice-meta">{item.angle} ・ {item.timeframe} ・ {item.place}</span><span className="scene-choice-title">{item.title}</span><span className="scene-teaser">{item.teaser}</span></button>)}
         </div>
-        {scene && <div className="scene-facts"><span className="step-label">この場面を詳しく見る</span><h3>{scene.title}</h3><p className="scene-detail">{scene.detail}</p><h4>この場面で確かめられること</h4><ul>{scene.facts.map((fact, index) => <li key={`${scene.id}-${index}`}>{fact}</li>)}</ul></div>}
+        {scene && <div className="scene-facts"><span className="step-label">この場面を詳しく見る</span><p className="scene-choice-meta">{scene.angle} ・ {scene.timeframe} ・ {scene.place}</p><h3>{scene.title}</h3><p className="scene-detail">{scene.detail}</p><h4>この場面で確かめられること</h4><ul>{scene.facts.map((fact, index) => <li key={`${scene.id}-${index}`}>{fact}</li>)}</ul></div>}
       </section>
-      {scene && <>
-        <section className="explore-card"><span className="step-label">STEP 3</span><h2>ここから、自分の「なんで？」を見つけよう</h2><p>「どこが不思議？」「誰の立場が気になる？」「なぜそうなった？」と考えてみよう。</p>{cards.length === 0 && questionForm}</section>
-        <section className="cards">{cards.map((card, cardIndex) => <article className="research-card" key={card.id}><span className="step-label">疑問 {cardIndex + 1}</span><h2>{card.question}</h2><h3>資料から分かったこと</h3>{card.evidence.map((evidence, evidenceIndex) => <div className="evidence-card" key={`${card.id}-evidence-${evidenceIndex}`}><p>{evidence.claim}</p><small>{evidence.relevance}</small><a href={evidence.sourceUrl} target="_blank" rel="noreferrer">{evidence.sourceTitle} を開く ↗</a></div>)}<h3>まだ決められないこと</h3><ul>{card.unknowns.map((unknown, unknownIndex) => <li key={`${card.id}-unknown-${unknownIndex}`}>{unknown}</li>)}</ul>{cardIndex === cards.length - 1 && <div className="next-questions"><h3>次に気になること</h3>{card.nextQuestions.map((nextQuestion, nextIndex) => <button key={`${card.id}-next-${nextIndex}`} onClick={() => setQuestion(nextQuestion)}>{nextQuestion}</button>)}</div>}</article>)}</section>
-        {cards.length > 0 && <section className="explore-card question-composer"><span className="step-label">次の疑問</span><h2>続けて、気になることを調べよう</h2>{questionForm}</section>}
-        {cards.length > 0 && <section className="reflection-card"><span className="step-label">最後に自分の言葉で</span><h2>考えの変化を書こう</h2><textarea value={reflection} onChange={(event) => setReflection(event.target.value)} placeholder="最初は〜と思ったが、資料を読んで〜と考えた。" /></section>}
-      </>}
+      {cards.length === 0 && <section className="explore-card direct-question-card"><span className="step-label">{scene ? "STEP 3" : "すでに調べたいことがある人へ"}</span><h2>{scene ? "ここから、自分の「なんで？」を見つけよう" : "自分の「なんで？」を書いてみよう"}</h2><p>{scene ? "「どこが不思議？」「誰の立場が気になる？」「なぜそうなった？」と考えてみよう。" : "場面を選ばなくても、気になっていることから調べ始められます。"}</p>{questionForm}</section>}
+      {cards.length > 0 && <section className="cards">{cards.map((card, cardIndex) => <article className="research-card" key={card.id}><span className="step-label">疑問 {cardIndex + 1}</span><h2>{card.question}</h2><h3>資料から分かったこと</h3>{card.evidence.map((evidence, evidenceIndex) => <div className="evidence-card" key={`${card.id}-evidence-${evidenceIndex}`}><p>{evidence.claim}</p><small>{evidence.relevance}</small><a href={evidence.sourceUrl} target="_blank" rel="noreferrer">{evidence.sourceTitle} を開く ↗</a></div>)}<h3>まだ決められないこと</h3><ul>{card.unknowns.map((unknown, unknownIndex) => <li key={`${card.id}-unknown-${unknownIndex}`}>{unknown}</li>)}</ul>{cardIndex === cards.length - 1 && <div className="next-questions"><h3>次に気になること</h3>{card.nextQuestions.map((nextQuestion, nextIndex) => <button key={`${card.id}-next-${nextIndex}`} onClick={() => setQuestion(nextQuestion)}>{nextQuestion}</button>)}</div>}</article>)}</section>}
+      {cards.length > 0 && <section className="explore-card question-composer"><span className="step-label">次の疑問</span><h2>続けて、気になることを調べよう</h2>{questionForm}</section>}
+      {cards.length > 0 && <section className="reflection-card"><span className="step-label">最後に自分の言葉で</span><h2>考えの変化を書こう</h2><textarea value={reflection} onChange={(event) => setReflection(event.target.value)} placeholder="最初は〜と思ったが、資料を読んで〜と考えた。" /></section>}
       {error && <p className="message error-message">{error}</p>}
     </main>
   );
