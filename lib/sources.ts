@@ -1,41 +1,11 @@
-import history from "@/data/history.json";
+import type { ResearchSource } from "@/lib/research-types";
 
-export type SourceKind = "一次・公的資料" | "教育解説" | "動画" | "画像" | "ユーザー追加";
-export type EvidenceRelation = "背景" | "根拠になる" | "別の見方" | "まだ分からない";
+const starterSources: ResearchSource[] = [
+  { id: "ndl-digital", title: "国立国会図書館デジタルコレクション", provider: "国立国会図書館", url: "https://dl.ndl.go.jp/", description: "歴史資料・古典籍・地図などを調べられるデジタルアーカイブです。" },
+  { id: "japan-search", title: "ジャパンサーチ", provider: "ジャパンサーチ", url: "https://jpsearch.go.jp/", description: "図書館・博物館・文書館などの資料を横断して探せます。" },
+  { id: "nhk-school", title: "NHK for School", provider: "NHK", url: "https://www.nhk.or.jp/school/", description: "地図や映像とともに、時代の背景を確認できる教育コンテンツです。" },
+];
 
-export type ResearchSource = {
-  id: string;
-  title: string;
-  provider: string;
-  url: string;
-  kind: SourceKind;
-  description: string;
-  whyThisMatters: string;
-  tags: string[];
-  origin: "ai" | "user";
-  relation?: EvidenceRelation;
-  note?: string;
-};
-
-const stopWords = ["なぜ", "どうして", "とは", "について", "本当", "理由", "歴史", "の", "は", "を", "が", "に", "て", "で", "と", "た", "る"];
-
-function termsFrom(question: string) {
-  return question
-    .replace(/[？?！!、。]/g, " ")
-    .split(/\s+/)
-    .flatMap((word) => [word, ...[...word].filter((character) => /[一-龠ぁ-んァ-ヶ]/.test(character))])
-    .filter((word) => word.length > 0 && !stopWords.includes(word));
-}
-
-export function findStarterSources(question: string): ResearchSource[] {
-  const terms = termsFrom(question);
-  const scored = history.sources.map((source) => ({
-    source,
-    score: source.tags.reduce((total, tag) => total + terms.filter((term) => tag.includes(term) || term.includes(tag)).length, 0),
-  }));
-
-  return scored
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 3)
-    .map(({ source }) => ({ ...source, kind: source.kind as SourceKind, origin: "ai" as const }));
+export function findStarterSources(): ResearchSource[] {
+  return starterSources;
 }

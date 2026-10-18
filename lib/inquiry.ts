@@ -1,0 +1,74 @@
+import type { InquiryPlan, ResearchCard, ResearchSource } from "@/lib/research-types";
+
+const inquirySchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    title: { type: "string", description: "授業テーマを表す短い題名" },
+    background: { type: "string", description: "小学高学年向け、120字以内の背景説明。結論や人物の動機を断定しない" },
+    curiosityHook: {
+      type: "object",
+      additionalProperties: false,
+      properties: { scenes: { type: "array", items: { type: "object", additionalProperties: false, properties: { id: { type: "string" }, title: { type: "string" }, summary: { type: "string" }, facts: { type: "array", items: { type: "string" } } }, required: ["id", "title", "summary", "facts"] } } },
+      required: ["scenes"],
+    },
+  },
+  required: ["title", "background", "curiosityHook"],
+};
+
+const cardSchema = { type: "object", additionalProperties: false, properties: { evidence: { type: "array", items: { type: "object", additionalProperties: false, properties: { claim: { type: "string" }, relevance: { type: "string" }, sourceTitle: { type: "string" }, sourceUrl: { type: "string" } }, required: ["claim", "relevance", "sourceTitle", "sourceUrl"] } }, unknowns: { type: "array", items: { type: "string" } }, nextQuestions: { type: "array", items: { type: "string" } } }, required: ["evidence", "unknowns", "nextQuestions"] };
+
+async function structuredResponse<T>(instructions: string, schema: Record<string, unknown>, useSearch = false): Promise<T> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
+
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
+      instructions,
+      input: "必ず指定されたJSON Schemaに従って応答してください。",
+      text: { format: { type: "json_schema", name: "history_inquiry_plan", strict: true, schema } },
+      // gpt-4.1-mini は web_search の filters をサポートしない。
+      // 信頼性の選別は investigateQuestion の指示と、画面上の出典表示で担保する。
+      ...(useSearch ? { tools: [{ type: "web_search" }], tool_choice: "required" } : {}),
+    }),
+  });
+
+  if (!response.ok) {
+    // OpenAI の詳細は利用者に返さず、開発サーバーのログだけに残す。
+    // 400 の原因（モデル名・ツール設定・Schema など）をここで特定できるようにする。
+    const detail = await response.text();
+    throw new Error(`OpenAI Responses API failed: ${response.status} ${detail.slice(0, 1_000)}`);
+  }
+  const payload = await response.json() as { output_text?: string; output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }> };
+  const text = payload.output_text ?? payload.output?.find((item) => item.type === "message")?.content?.find((item) => item.type === "output_text")?.text;
+  if (!text) throw new Error("OpenAI Responses API did not return structured output");
+  return JSON.parse(text) as T;
+}
+
+export async function createInquiryPlan(assignment: string, sources: ResearchSource[]): Promise<InquiryPlan> {
+  const sourceSummary = sources.map(({ title, provider, description }) => ({ title, provider, description }));
+  const plan = await structuredResponse<Omit<InquiryPlan, "sources">>(`あなたは小学高学年の歴史探究を支える案内役です。
+
+児童が「歴史を調べなさい」という課題を義務として終わらせず、自分の「なんで？」を見つけられるようにしてください。最初に答えや人物の本心を教えてはいけません。scenesには、問いではなく、児童が気になれる歴史上の場面を2〜3個入れてください。各場面には短い事実を最大3個入れます。
+
+backgroundは探究のための補助であり、児童の考察を代筆してはいけません。資料の本文を読んだふりをしてはいけません。
+
+先生からの課題: ${assignment}
+
+表示する資料の候補: ${JSON.stringify(sourceSummary)}`,
+  inquirySchema);
+
+  return {
+    ...plan,
+    curiosityHook: { scenes: plan.curiosityHook.scenes.slice(0, 3).map((scene) => ({ ...scene, facts: scene.facts.slice(0, 3) })) },
+    sources,
+  };
+}
+
+export async function investigateQuestion(assignment: string, question: string): Promise<ResearchCard> {
+  const card = await structuredResponse<Omit<ResearchCard, "id" | "question">>(`小学高学年の歴史探究のため、次の疑問に直接関係する根拠をWeb検索で確かめてください。必ず検索を行い、公的機関・博物館・図書館・教育機関を優先します。evidenceは最大3枚で、各claimは検索で確かめた事実のみを短く言い換え、sourceTitleとsourceUrlを必ず対応させます。人物の本心や原因は断定せず、結論が出ない点はunknownsに残してください。nextQuestionsは児童が次に自分で選べる問いです。\n\n課題: ${assignment}\n疑問: ${question}`, cardSchema, true);
+  return { id: crypto.randomUUID(), question, ...card, evidence: card.evidence.slice(0, 3), unknowns: card.unknowns.slice(0, 3), nextQuestions: card.nextQuestions.slice(0, 3) };
+}
