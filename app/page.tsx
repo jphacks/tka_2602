@@ -1,5 +1,5 @@
-import { InquiryWorkspace } from "@/components/inquiry-workspace";
+import { ResearchWorkspace } from "@/components/research-workspace";
 
 export default function HomePage() {
-  return <InquiryWorkspace />;
+  return <main className="app-shell"><ResearchWorkspace /></main>;
 }
